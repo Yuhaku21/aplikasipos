@@ -630,6 +630,37 @@
     setTimeout(()=>{ openProdukModal(); setTimeout(()=>{ const f = document.getElementById('fBarcode'); if(f) f.value = code; const gen = document.getElementById('mGen'); if(gen) gen.click(); }, 200); }, 300);
   }
 
+  function openHardwareScannerModal(){
+    const overlay = openModal(`
+      <div class="modal-head"><h3>Scan (Alat)</h3><button class="modal-close" id="mClose">✕</button></div>
+      <div class="modal-body">
+        <p style="font-size:13px;color:var(--ink-soft);">Gunakan barcode scanner (yang mengirim input sebagai keyboard). Arahkan kursor ke field di bawah, lalu lakukan scan.</p>
+        <input id="hwScannerInput" autofocus style="width:100%;padding:10px;margin-top:12px;font-size:16px;">
+        <div style="font-size:12px;color:var(--ink-soft);margin-top:8px;">Scanner biasanya mengirim <b>kode</b> diakhiri tombol Enter.</div>
+      </div>
+      <div class="modal-foot"><button class="btn" id="mCancel">Batal</button></div>
+    `,'wide');
+    const inp = document.getElementById('hwScannerInput');
+    let buffer = '';
+    let lastTime = 0;
+    function onKey(e){
+      const now = Date.now();
+      if (now - lastTime > 120) buffer = ''; // reset if slow typing
+      lastTime = now;
+      if (e.key === 'Enter'){
+        const code = buffer.trim(); buffer = '';
+        if (code) { closeModal(); addToCartByBarcode(code); }
+        e.preventDefault();
+        return;
+      }
+      if (e.key && e.key.length === 1) buffer += e.key;
+    }
+    inp.focus();
+    inp.addEventListener('keydown', onKey);
+    document.getElementById('mCancel').addEventListener('click', ()=>{ inp.removeEventListener('keydown', onKey); closeModal(); });
+    document.getElementById('mClose').addEventListener('click', ()=>{ inp.removeEventListener('keydown', onKey); closeModal(); });
+  }
+
   function deleteProduk(id){
     const p = products.find(x=>x.id===id);
     const overlay = openModal(`
