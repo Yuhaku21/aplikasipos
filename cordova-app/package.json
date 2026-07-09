@@ -1,0 +1,24 @@
+{
+  "name": "tranzivo-cordova",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "build:android": "cordova build android",
+    "run:android": "cordova run android",
+    "build:ios": "cordova build ios",
+    "run:ios": "cordova run ios"
+  },
+  "devDependencies": {
+    "cordova": "^11.0.0",
+    "cordova-android": "^10.1.2",
+    "phonegap-plugin-barcodescanner": "^8.1.0"
+  },
+  "cordova": {
+    "plugins": [
+      {
+        "name": "cordova-plugin-whitelist"
+      }
+    ],
+    "platforms": []
+  }
+}
