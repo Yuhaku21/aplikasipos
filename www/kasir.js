@@ -165,7 +165,7 @@
     const count = cart.reduce((s,c)=>s+c.qty,0);
     $('#cartCountLbl').textContent = count + ' item di keranjang';
     $('#sumSubtotal').textContent = fmt(total);
-    $('#sumTotal').textContent = fmt(total);
+    $('#sumTotal').textContent = fmt(cartTotal());
     $('#btnBayar').disabled = cart.length === 0;
     $('#mcCount').textContent = count;
     $('#mcTotal').textContent = fmt(total);
