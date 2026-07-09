@@ -1,0 +1,36 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Export Tranzivo Icons</title>
+<style>body{font-family:Inter,Arial,Helvetica,sans-serif;background:#f6f6f6;color:#222;padding:28px}h1{font-size:18px;margin:0 0 12px}button{display:inline-block;padding:10px 14px;border-radius:8px;border:1px solid #d1d1d1;background:#fff;cursor:pointer;margin-right:8px}#preview{display:flex;gap:14px;margin-top:18px;align-items:center}</style>
+</head>
+<body>
+<h1>Export Tranzivo icons (PNG) — 192 & 512</h1>
+<p>Click a button to download a PNG version of the SVG icon. Files are generated locally in your browser.</p>
+<div>
+  <button id="dl192">Download 192×192 PNG</button>
+  <button id="dl512">Download 512×512 PNG</button>
+  <button id="dlall">Download both</button>
+</div>
+<div id="preview"></div>
+<script>
+function roundedRect(ctx,x,y,w,h,r){ ctx.beginPath(); ctx.moveTo(x+r,y); ctx.arcTo(x+w,y,x+w,y+h,r); ctx.arcTo(x+w,y+h,x,y+h,r); ctx.arcTo(x,y+h,x,y,r); ctx.arcTo(x,y,x+w,y,r); ctx.closePath(); }
+function drawIcon(size){ const canvas=document.createElement('canvas'); canvas.width=canvas.height=size; const ctx=canvas.getContext('2d'); const bg='#0F6B4C'; const pad = Math.round(size*0.085); const corner = Math.round(size*0.12);
+ // background
+ ctx.fillStyle=bg; roundedRect(ctx,0,0,size,size,Math.round(size*0.12)); ctx.fill();
+ // white inset panel
+ const inset = pad; roundedRect(ctx,inset,inset,size-inset*2,size-inset*2,Math.round(size*0.1)); ctx.fillStyle='#ffffff'; ctx.fill();
+ // letter T
+ ctx.fillStyle=bg; const fontSize = Math.round(size*0.55); ctx.font = `700 ${fontSize}px sans-serif`; ctx.textAlign='center'; ctx.textBaseline='middle'; ctx.fillText('T', size/2, size/2+Math.round(size*0.02));
+ return canvas; }
+function triggerDownload(canvas, name){ canvas.toBlob(function(blob){ const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download=name; document.body.appendChild(a); a.click(); setTimeout(()=>{ URL.revokeObjectURL(a.href); a.remove(); },1500); }, 'image/png'); }
+function showPreview(){ const p=document.getElementById('preview'); p.innerHTML=''; [192,512].forEach(s=>{ const c=drawIcon(s); c.style.width=(s/4)+'px'; c.style.height=(s/4)+'px'; p.appendChild(c); }); }
+document.getElementById('dl192').addEventListener('click', ()=>{ triggerDownload(drawIcon(192),'icon-192.png'); });
+document.getElementById('dl512').addEventListener('click', ()=>{ triggerDownload(drawIcon(512),'icon-512.png'); });
+document.getElementById('dlall').addEventListener('click', ()=>{ triggerDownload(drawIcon(192),'icon-192.png'); setTimeout(()=>triggerDownload(drawIcon(512),'icon-512.png'),600); });
+showPreview();
+</script>
+</body>
+</html>
