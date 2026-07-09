@@ -5,6 +5,21 @@
   const fmt = n => 'Rp ' + Math.round(n||0).toLocaleString('id-ID');
   const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2,7);
 
+  // Storage helpers: prefer Capacitor's storage (`window.storage`) when available, fallback to localStorage
+  async function storageGet(key){
+    if (window.storage && typeof window.storage.get === 'function'){
+      try { const r = await window.storage.get(key); return r ? JSON.parse(r.value) : null; } catch(e){}
+    }
+    try { const v = localStorage.getItem(key); return v ? JSON.parse(v) : null; } catch(e){ return null; }
+  }
+  async function storageSet(key, value){
+    const s = JSON.stringify(value);
+    if (window.storage && typeof window.storage.set === 'function'){
+      try { await window.storage.set(key, s); return; } catch(e){}
+    }
+    try { localStorage.setItem(key, s); } catch(e){}
+  }
+
   let products = [];
   let transactions = [];
   let settings = { shopName: 'Kasir Toko', note: 'Terima kasih telah berbelanja', qris: '', bank: '', wa: '' };
@@ -39,25 +54,25 @@
 
   // ---------- Storage ----------
   async function loadAll(){
-    try { const p = await window.storage.get('products'); products = p ? JSON.parse(p.value) : seedProducts(); }
+    try { const p = await storageGet('products'); products = p ? p : seedProducts(); }
     catch(e){ products = seedProducts(); }
-    try { const t = await window.storage.get('transactions'); transactions = t ? JSON.parse(t.value) : []; }
+    try { const t = await storageGet('transactions'); transactions = t ? t : []; }
     catch(e){ transactions = []; }
-    try { const s = await window.storage.get('settings'); if (s) settings = Object.assign(settings, JSON.parse(s.value)); }
+    try { const s = await storageGet('settings'); if (s) settings = Object.assign(settings, s); }
     catch(e){ /* defaults */ }
-    try { const d = await window.storage.get('discounts'); discounts = d ? JSON.parse(d.value) : []; }
+    try { const d = await storageGet('discounts'); discounts = d ? d : []; }
     catch(e){ discounts = []; }
-    try { const m = await window.storage.get('members'); members = m ? JSON.parse(m.value) : []; }
+    try { const m = await storageGet('members'); members = m ? m : []; }
     catch(e){ members = []; }
     let exists = false;
-    try { exists = !!(await window.storage.get('products')); } catch(e){ exists = false; }
+    try { exists = !!(await storageGet('products')); } catch(e){ exists = false; }
     if (!exists) await saveProducts();
   }
-  async function saveProducts(){ try { await window.storage.set('products', JSON.stringify(products)); } catch(e){ toast('Gagal menyimpan produk'); } }
-  async function saveTransactions(){ try { await window.storage.set('transactions', JSON.stringify(transactions)); } catch(e){ toast('Gagal menyimpan transaksi'); } }
-  async function saveSettings(){ try { await window.storage.set('settings', JSON.stringify(settings)); } catch(e){ toast('Gagal menyimpan pengaturan'); } }
-  async function saveDiscounts(){ try { await window.storage.set('discounts', JSON.stringify(discounts)); } catch(e){ toast('Gagal menyimpan diskon'); } }
-  async function saveMembers(){ try { await window.storage.set('members', JSON.stringify(members)); } catch(e){ toast('Gagal menyimpan member'); } }
+  async function saveProducts(){ try { await storageSet('products', products); } catch(e){ toast('Gagal menyimpan produk'); } }
+  async function saveTransactions(){ try { await storageSet('transactions', transactions); } catch(e){ toast('Gagal menyimpan transaksi'); } }
+  async function saveSettings(){ try { await storageSet('settings', settings); } catch(e){ toast('Gagal menyimpan pengaturan'); } }
+  async function saveDiscounts(){ try { await storageSet('discounts', discounts); } catch(e){ toast('Gagal menyimpan diskon'); } }
+  async function saveMembers(){ try { await storageSet('members', members); } catch(e){ toast('Gagal menyimpan member'); } }
 
   // ---------- Nav ----------
   $$('.nav-btn').forEach(btn=>{
