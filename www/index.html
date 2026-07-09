@@ -338,10 +338,22 @@
 .pwa-splash.hide{opacity:0;pointer-events:none;transform:translateY(-10px)}
 @keyframes logo-pulse{0%{transform:scale(.96) rotate(0deg)}50%{transform:scale(1.06) rotate(6deg)}100%{transform:scale(.96) rotate(0deg)}}
 @keyframes title-float{0%{transform:translateY(0);opacity:.92}50%{transform:translateY(-6px);opacity:1}100%{transform:translateY(0);opacity:.92}}
+
+/* Splash loader (three dots) */
+.splash-loader{display:flex;gap:8px;margin-top:12px}
+.splash-loader .dot{width:10px;height:10px;border-radius:50%;background:rgba(255,255,255,0.9);opacity:.25;transform:translateY(0);animation:dot-bounce 1s infinite ease-in-out}
+.splash-loader .dot:nth-child(1){animation-delay:0s}
+.splash-loader .dot:nth-child(2){animation-delay:0.15s}
+.splash-loader .dot:nth-child(3){animation-delay:0.3s}
+@keyframes dot-bounce{0%{opacity:.25;transform:translateY(0)}50%{opacity:1;transform:translateY(-8px)}100%{opacity:.25;transform:translateY(0)}}
 </style>
 
 <div id="kasir-app">
-  <div id="pwa-splash" class="pwa-splash"><div class="logo-wrap"><img src="icons/logotrazivo.png" alt="Tranzivo" onerror="this.onerror=null;this.src='icons/logotrazivo.svg'"></div><div class="pwa-splash-title">Tranzivo</div></div>
+  <div id="pwa-splash" class="pwa-splash">
+    <div class="logo-wrap"><img src="icons/logotrazivo.png" alt="Tranzivo" onerror="this.onerror=null;this.src='icons/logotrazivo.svg'"></div>
+    <div class="pwa-splash-title">Tranzivo</div>
+    <div class="splash-loader" aria-hidden="true"><span class="dot"></span><span class="dot"></span><span class="dot"></span></div>
+  </div>
   <div class="topbar">
     <div class="topbar-left">
       <span class="brand-dot"></span>

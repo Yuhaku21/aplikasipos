@@ -820,6 +820,11 @@
     renderCatChips();
     renderProdGrid();
     renderCart();
+    // Hide splash after initialization
+    try {
+      const s = document.getElementById('pwa-splash');
+      if (s){ setTimeout(()=>{ s.classList.add('hide'); setTimeout(()=>{ if (s.parentNode) s.parentNode.removeChild(s); }, 500); }, 700); }
+    } catch(e){}
   }
   init();
 })();

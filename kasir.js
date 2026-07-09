@@ -832,7 +832,7 @@
     // Ensure the in-page splash is hidden once app initialization completes
     try {
       const s = document.getElementById('pwa-splash');
-      if (s) setTimeout(()=>s.classList.add('hide'), 200);
+      if (s){ setTimeout(()=>{ s.classList.add('hide'); setTimeout(()=>{ if (s.parentNode) s.parentNode.removeChild(s); }, 500); }, 200); }
     } catch(e){}
   }
   init();
