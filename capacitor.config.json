@@ -1,0 +1,6 @@
+{
+  "appId": "com.aplikasipos.app",
+  "appName": "Tranzivo",
+  "webDir": "www",
+  "bundledWebRuntime": false
+}
