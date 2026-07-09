@@ -8,7 +8,8 @@ const ASSETS = [
   '/icons/icon-512.png',
   '/icons/logotrazivo.png',
   '/icons/icon-192.svg',
-  '/icons/icon-512.svg'
+  '/icons/icon-512.svg',
+  '/icons/logotrazivo.svg'
 ];
 
 self.addEventListener('install', event => {
