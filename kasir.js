@@ -764,6 +764,10 @@
     deferredPrompt = e;
     try { const btn = $('#btnInstall'); if (btn) btn.style.display = 'flex'; } catch(e){}
   });
+  function isAppInstalled(){
+    try { return window.navigator.standalone === true || window.matchMedia('(display-mode: standalone)').matches || window.matchMedia('(display-mode: fullscreen)').matches || (document.referrer && document.referrer.startsWith('android-app://')); } catch(e){ return false; }
+  }
+  window.addEventListener('appinstalled', ()=>{ try{ const b = document.getElementById('btnInstall'); if(b) b.style.display='none'; localStorage.setItem('tranzivo_installed','1'); if (typeof toast === 'function') toast('Aplikasi terpasang'); }catch(e){} });
   try {
     const manifest = {
       name: settings.shopName || 'Kasir Toko',
@@ -829,6 +833,8 @@
     renderCatChips();
     renderProdGrid();
     renderCart();
+    // Hide install button if app is already installed / standalone
+    try { const btn = $('#btnInstall'); if (btn){ if (isAppInstalled() || localStorage.getItem('tranzivo_installed')) btn.style.display = 'none'; else btn.style.display = 'flex'; } } catch(e){}
     // Ensure the in-page splash is hidden once app initialization completes
     try {
       const s = document.getElementById('pwa-splash');
