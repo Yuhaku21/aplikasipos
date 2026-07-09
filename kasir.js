@@ -11,6 +11,10 @@
   let cart = [];
   let currentCategory = 'Semua';
   let searchTerm = '';
+  let discounts = [];
+  let members = [];
+  let activeDiscount = null;
+  let activeMember = null;
 
   const seedProducts = () => ([
     { id: uid(), name: 'Indomie Goreng', category: 'Makanan', price: 3500, stock: 48 },
@@ -41,6 +45,10 @@
     catch(e){ transactions = []; }
     try { const s = await window.storage.get('settings'); if (s) settings = Object.assign(settings, JSON.parse(s.value)); }
     catch(e){ /* defaults */ }
+    try { const d = await window.storage.get('discounts'); discounts = d ? JSON.parse(d.value) : []; }
+    catch(e){ discounts = []; }
+    try { const m = await window.storage.get('members'); members = m ? JSON.parse(m.value) : []; }
+    catch(e){ members = []; }
     let exists = false;
     try { exists = !!(await window.storage.get('products')); } catch(e){ exists = false; }
     if (!exists) await saveProducts();
@@ -48,6 +56,8 @@
   async function saveProducts(){ try { await window.storage.set('products', JSON.stringify(products)); } catch(e){ toast('Gagal menyimpan produk'); } }
   async function saveTransactions(){ try { await window.storage.set('transactions', JSON.stringify(transactions)); } catch(e){ toast('Gagal menyimpan transaksi'); } }
   async function saveSettings(){ try { await window.storage.set('settings', JSON.stringify(settings)); } catch(e){ toast('Gagal menyimpan pengaturan'); } }
+  async function saveDiscounts(){ try { await window.storage.set('discounts', JSON.stringify(discounts)); } catch(e){ toast('Gagal menyimpan diskon'); } }
+  async function saveMembers(){ try { await window.storage.set('members', JSON.stringify(members)); } catch(e){ toast('Gagal menyimpan member'); } }
 
   // ---------- Nav ----------
   $$('.nav-btn').forEach(btn=>{
@@ -201,14 +211,38 @@
     renderPayModal();
   });
 
-  function cartTotal(){ return cart.reduce((s,c)=>s+c.price*c.qty,0); }
+  function cartSubtotal(){ return cart.reduce((s,c)=>s+c.price*c.qty,0); }
+  function cartTotal(){
+    let total = cartSubtotal();
+    if (activeDiscount){
+      if (activeDiscount.type === 'percent') total = total * (1 - activeDiscount.value/100);
+      else total = Math.max(0, total - activeDiscount.value);
+    }
+    if (activeMember && activeMember.discount > 0){ total = total * (1 - activeMember.discount/100); }
+    return Math.round(total);
+  }
+
+  function formatDiscountBadge(){
+    const pieces = [];
+    if (activeDiscount) pieces.push(activeDiscount.name);
+    if (activeMember) pieces.push(activeMember.name + ' (' + activeMember.discount + '%)');
+    return pieces.length ? pieces.join(' · ') : '';
+  }
 
   function renderPayModal(){
+    const subtotal = cartSubtotal();
     const total = cartTotal();
     const overlay = openModal(`
       <div class="modal-head"><h3>Pembayaran</h3><button class="modal-close" id="mClose">✕</button></div>
       <div class="modal-body">
-        <div class="big-total"><div class="lbl">Total Belanja</div><div class="val num">${fmt(total)}</div></div>
+        <div class="big-total"><div class="lbl">Subtotal</div><div class="val num" style="font-size:24px;">${fmt(subtotal)}</div></div>
+        <div style="margin:0 0 16px 0;padding:10px 12px;border:1px dashed var(--border-strong);border-radius:8px;background:var(--paper);font-size:12.5px;">
+          <div style="display:flex;justify-content:space-between;margin-bottom:6px;"><span>Diskon</span><span class="num">${activeDiscount ? (activeDiscount.type==='percent' ? activeDiscount.value+'%' : fmt(activeDiscount.value)) : 'Tidak ada'}</span></div>
+          <div style="display:flex;justify-content:space-between;margin-bottom:6px;"><span>Member</span><span class="num">${activeMember ? activeMember.discount + '%' : 'Tidak ada'}</span></div>
+          <div style="display:flex;justify-content:space-between;font-weight:700;padding-top:6px;border-top:1px dashed var(--border-strong);"><span>Total akhir</span><span class="num">${fmt(total)}</span></div>
+        </div>
+        <div class="field"><label>Diskon</label><select id="discountSelect"><option value="">Tidak pakai diskon</option>${discounts.map(d=>`<option value="${d.id}" ${activeDiscount&&activeDiscount.id===d.id?'selected':''}>${d.name} (${d.type==='percent'?d.value+'%':fmt(d.value)})</option>`).join('')}</select></div>
+        <div class="field"><label>Member</label><select id="memberSelect"><option value="">Bukan member</option>${members.map(m=>`<option value="${m.id}" ${activeMember&&activeMember.id===m.id?'selected':''}>${m.name} (${m.phone}) - ${m.discount}%</option>`).join('')}</select></div>
         <div class="pay-tabs">
           <button class="pay-tab" data-m="tunai">Tunai</button>
           <button class="pay-tab" data-m="qris">QRIS</button>
@@ -223,6 +257,8 @@
     `);
     $('#mClose', overlay).addEventListener('click', closeModal);
     $('#mCancel', overlay).addEventListener('click', closeModal);
+    $('#discountSelect', overlay).addEventListener('change', e=>{ activeDiscount = discounts.find(d=>d.id===e.target.value) || null; renderPayModal(); });
+    $('#memberSelect', overlay).addEventListener('change', e=>{ activeMember = members.find(m=>m.id===e.target.value) || null; renderPayModal(); });
     $$('.pay-tab', overlay).forEach(tab=>{
       tab.addEventListener('click', ()=>{ payMethod = tab.dataset.m; cashGiven = 0; renderPayBody(overlay, total); });
     });
@@ -276,7 +312,10 @@
       id: uid(),
       date: new Date().toISOString(),
       items: cart.map(c=>({ id:c.id, name:c.name, price:c.price, qty:c.qty, subtotal:c.price*c.qty })),
+      subtotal: cartSubtotal(),
       total,
+      discount: activeDiscount ? { id: activeDiscount.id, name: activeDiscount.name, type: activeDiscount.type, value: activeDiscount.value } : null,
+      member: activeMember ? { id: activeMember.id, name: activeMember.name, phone: activeMember.phone, discount: activeMember.discount } : null,
       method: payMethod,
       cashGiven: payMethod==='tunai' ? cashGiven : null,
       change: payMethod==='tunai' ? (cashGiven-total) : null,
@@ -289,6 +328,8 @@
     await saveTransactions();
     await saveProducts();
     cart = [];
+    activeDiscount = null;
+    activeMember = null;
     renderCart();
     renderProdGrid();
     showSuccessModal(trx);
@@ -303,6 +344,8 @@
         <div style="font-size:12.5px;color:var(--ink-soft);margin-bottom:16px;">${methodLabel} · ${new Date(trx.date).toLocaleTimeString('id-ID',{hour:'2-digit',minute:'2-digit'})}</div>
         <div style="text-align:left;background:var(--paper);border:1px solid var(--border);border-radius:8px;padding:12px 14px;margin-bottom:14px;">
           ${trx.items.map(i=>`<div style="display:flex;justify-content:space-between;font-size:12.5px;padding:3px 0;"><span>${i.qty}x ${i.name}</span><span class="num">${fmt(i.subtotal)}</span></div>`).join('')}
+          ${trx.discount ? `<div style="display:flex;justify-content:space-between;font-size:12px;color:var(--ink-soft);padding-top:6px;"><span>Diskon</span><span class="num">${trx.discount.type==='percent' ? trx.discount.value+'%' : fmt(trx.discount.value)}</span></div>` : ''}
+          ${trx.member ? `<div style="display:flex;justify-content:space-between;font-size:12px;color:var(--ink-soft);padding-top:4px;"><span>Member</span><span class="num">${trx.member.discount}%</span></div>` : ''}
           <div style="display:flex;justify-content:space-between;font-weight:700;padding-top:8px;margin-top:6px;border-top:1px dashed var(--border-strong);"><span>Total</span><span class="num">${fmt(trx.total)}</span></div>
           ${trx.method==='tunai' ? `<div style="display:flex;justify-content:space-between;font-size:12px;color:var(--ink-soft);padding-top:4px;"><span>Kembalian</span><span class="num">${fmt(trx.change)}</span></div>` : ''}
         </div>
@@ -328,6 +371,9 @@
     lines.push('—'.repeat(20));
     trx.items.forEach(i=> lines.push(`${i.qty}x ${i.name} — ${fmt(i.subtotal)}`));
     lines.push('—'.repeat(20));
+    lines.push(`Subtotal: ${fmt(trx.subtotal || trx.total)}`);
+    if (trx.discount) lines.push(`Diskon: ${trx.discount.type==='percent' ? trx.discount.value+'%' : fmt(trx.discount.value)}`);
+    if (trx.member) lines.push(`Member: ${trx.member.name} (${trx.member.discount}%)`);
     lines.push(`Total: ${fmt(trx.total)}`);
     if (trx.method === 'tunai'){
       lines.push(`Bayar: ${fmt(trx.cashGiven)}`);
@@ -352,6 +398,9 @@
       <hr>
       ${trx.items.map(i=>`<div class="pr-row"><span>${i.qty}x ${i.name}</span><span>${fmt(i.subtotal)}</span></div>`).join('')}
       <hr>
+      <div class="pr-row"><span>Subtotal</span><span>${fmt(trx.subtotal || trx.total)}</span></div>
+      ${trx.discount ? `<div class="pr-row"><span>Diskon</span><span>${trx.discount.type==='percent' ? trx.discount.value+'%' : fmt(trx.discount.value)}</span></div>` : ''}
+      ${trx.member ? `<div class="pr-row"><span>Member</span><span>${trx.member.discount}%</span></div>` : ''}
       <div class="pr-row pr-total"><span>Total</span><span>${fmt(trx.total)}</span></div>
       ${trx.method==='tunai' ? `<div class="pr-row"><span>Bayar</span><span>${fmt(trx.cashGiven)}</span></div><div class="pr-row"><span>Kembali</span><span>${fmt(trx.change)}</span></div>` : ''}
       <hr>
@@ -592,7 +641,17 @@
     $('#setNote').value = settings.note || '';
     $('#setBank').value = settings.bank || '';
     $('#setWa').value = settings.wa || '';
+    renderDiscountList();
+    renderMemberList();
     renderQrisPreview();
+  }
+
+  function renderDiscountList(){
+    $('#discountList').innerHTML = discounts.length ? discounts.map(d=>`<div class="promo-item"><strong>${d.name}</strong>${d.type==='percent' ? d.value+'% off' : fmt(d.value)+' off'}<div class="mini-muted">${d.type==='percent' ? 'Persen' : 'Nominal'}</div></div>`).join('') : '<div class="mini-muted">Belum ada diskon tersimpan.</div>';
+  }
+
+  function renderMemberList(){
+    $('#memberList').innerHTML = members.length ? members.map(m=>`<div class="member-item"><strong>${m.name}</strong>${m.phone}<div class="mini-muted">Diskon ${m.discount}%</div></div>`).join('') : '<div class="mini-muted">Belum ada member tersimpan.</div>';
   }
   function renderQrisPreview(){
     if (settings.qris){
@@ -632,6 +691,31 @@
     settings.wa = $('#setWa').value.trim();
     await saveSettings();
     toast('Nomor WhatsApp disimpan');
+  });
+  $('#btnSaveDiscount').addEventListener('click', async ()=>{
+    const name = $('#discountName').value.trim();
+    const type = $('#discountType').value;
+    const value = Number($('#discountValue').value);
+    if (!name || !value) { toast('Isi nama dan nilai diskon'); return; }
+    discounts.push({ id: uid(), name, type, value });
+    await saveDiscounts();
+    $('#discountName').value = '';
+    $('#discountValue').value = '';
+    renderDiscountList();
+    toast('Diskon disimpan');
+  });
+  $('#btnSaveMember').addEventListener('click', async ()=>{
+    const name = $('#memberName').value.trim();
+    const phone = $('#memberPhone').value.trim();
+    const discount = Number($('#memberDiscount').value);
+    if (!name || !phone) { toast('Isi nama dan nomor member'); return; }
+    members.push({ id: uid(), name, phone, discount: discount || 0 });
+    await saveMembers();
+    $('#memberName').value = '';
+    $('#memberPhone').value = '';
+    $('#memberDiscount').value = '';
+    renderMemberList();
+    toast('Member disimpan');
   });
 
   // ---------- PWA Install ----------

@@ -257,6 +257,11 @@
 #kasir-app .settings-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; max-width: 720px; }
 #kasir-app .card { background: var(--panel); border: 1px solid var(--border); border-radius: 10px; padding: 16px; }
 #kasir-app .card h4 { font-family: 'Space Grotesk'; font-size: 14px; margin: 0 0 12px 0; }
+#kasir-app .inline-fields { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+#kasir-app .promo-list, #kasir-app .member-list { display: flex; flex-direction: column; gap: 8px; margin-top: 12px; }
+#kasir-app .promo-item, #kasir-app .member-item { background: var(--paper); border: 1px solid var(--border); border-radius: 8px; padding: 10px 12px; font-size: 12px; }
+#kasir-app .promo-item strong, #kasir-app .member-item strong { display: block; font-size: 12.5px; margin-bottom: 2px; }
+#kasir-app .mini-muted { font-size: 11px; color: var(--ink-soft); margin-top: 2px; }
 #kasir-app .upload-zone { border: 1.5px dashed var(--border-strong); border-radius: 9px; padding: 16px; text-align: center; cursor: pointer; }
 #kasir-app .upload-zone:hover { border-color: var(--primary); background: var(--primary-soft); }
 #kasir-app .upload-zone img { width: 130px; height: 130px; object-fit: contain; margin-bottom: 8px; }
@@ -419,6 +424,26 @@
               <div style="font-size:12px;color:var(--ink-soft);" id="qrisUploadLabel">Klik untuk unggah gambar QRIS</div>
             </div>
             <input type="file" id="qrisFileInput" accept="image/*" style="display:none;">
+          </div>
+          <div class="card">
+            <h4>Diskon</h4>
+            <div class="inline-fields">
+              <div class="field"><label>Nama Diskon</label><input type="text" id="discountName" placeholder="Hari Raya"></div>
+              <div class="field"><label>Jenis</label><select id="discountType"><option value="percent">Persen</option><option value="nominal">Nominal</option></select></div>
+            </div>
+            <div class="field"><label>Nilai</label><input type="number" id="discountValue" min="0" placeholder="10"></div>
+            <button class="btn btn-primary" id="btnSaveDiscount">Simpan Diskon</button>
+            <div id="discountList" class="promo-list"></div>
+          </div>
+          <div class="card">
+            <h4>Membership</h4>
+            <div class="inline-fields">
+              <div class="field"><label>Nama Member</label><input type="text" id="memberName" placeholder="Budi"></div>
+              <div class="field"><label>No. HP</label><input type="text" id="memberPhone" placeholder="0812xxxx"></div>
+            </div>
+            <div class="field"><label>Diskon Member (%)</label><input type="number" id="memberDiscount" min="0" max="100" placeholder="0"></div>
+            <button class="btn btn-primary" id="btnSaveMember">Simpan Member</button>
+            <div id="memberList" class="member-list"></div>
           </div>
           <div class="card" style="grid-column:1/-1;">
             <h4>Info Rekening Transfer</h4>
