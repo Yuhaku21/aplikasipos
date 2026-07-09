@@ -180,7 +180,7 @@
     const count = cart.reduce((s,c)=>s+c.qty,0);
     $('#cartCountLbl').textContent = count + ' item di keranjang';
     $('#sumSubtotal').textContent = fmt(total);
-    $('#sumTotal').textContent = fmt(total);
+    $('#sumTotal').textContent = fmt(cartTotal());
     $('#btnBayar').disabled = cart.length === 0;
     $('#mcCount').textContent = count;
     $('#mcTotal').textContent = fmt(total);
@@ -892,7 +892,6 @@
   window.addEventListener('beforeinstallprompt', (e)=>{
     e.preventDefault();
     deferredPrompt = e;
-    try { const btn = $('#btnInstall'); if (btn) btn.style.display = 'flex'; } catch(e){}
   });
   function isAppInstalled(){
     try { return window.navigator.standalone === true || window.matchMedia('(display-mode: standalone)').matches || window.matchMedia('(display-mode: fullscreen)').matches || (document.referrer && document.referrer.startsWith('android-app://')); } catch(e){ return false; }
@@ -918,15 +917,7 @@
   $('#btnInstall').addEventListener('click', async ()=>{
     if (deferredPrompt){
       deferredPrompt.prompt();
-      try {
-        const choice = await deferredPrompt.userChoice;
-        if (choice && choice.outcome === 'accepted'){
-          toast('Aplikasi berhasil dipasang');
-          const btn = $('#btnInstall'); if (btn) btn.style.display = 'none';
-        } else {
-          toast('Instalasi dibatalkan');
-        }
-      } catch(e){ }
+      try { await deferredPrompt.userChoice; } catch(e){}
       deferredPrompt = null;
       return;
     }
@@ -965,13 +956,13 @@
     renderCart();
     // Hide install button if app is already installed / standalone
     try { const btn = $('#btnInstall'); if (btn){ if (isAppInstalled() || localStorage.getItem('tranzivo_installed')) btn.style.display = 'none'; else btn.style.display = 'flex'; } } catch(e){}
-    // Ensure the in-page splash is hidden once app initialization completes
+    // Hide splash after initialization
     try {
       const s = document.getElementById('pwa-splash');
-      if (s){ setTimeout(()=>{ s.classList.add('hide'); setTimeout(()=>{ if (s.parentNode) s.parentNode.removeChild(s); }, 500); }, 200); }
+      if (s){ setTimeout(()=>{ s.classList.add('hide'); setTimeout(()=>{ if (s.parentNode) s.parentNode.removeChild(s); }, 500); }, 700); }
     } catch(e){}
   }
   init();
+  // attach scan button
   try { const bs = document.getElementById('btnScan'); if (bs) bs.addEventListener('click', openScannerModal); } catch(e){}
-  try { const bh = document.getElementById('btnScanHw'); if (bh) bh.addEventListener('click', openHardwareScannerModal); } catch(e){}
 })();
