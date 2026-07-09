@@ -963,6 +963,42 @@
     } catch(e){}
   }
   init();
-  // attach scan button
-  try { const bs = document.getElementById('btnScan'); if (bs) bs.addEventListener('click', openScannerModal); } catch(e){}
+  // Unified scan chooser: on mobile show a choice, on desktop keep separate actions
+  function openScanChooser(){
+    const overlay = openModal(`
+      <div class="modal-head"><h3>Pilih Metode Scan</h3><button class="modal-close" id="mClose">✕</button></div>
+      <div class="modal-body">
+        <p style="font-size:13px;color:var(--ink-soft);margin-bottom:12px;">Pilih bagaimana Anda ingin melakukan pemindaian barcode:</p>
+        <div style="display:flex;gap:10px;flex-direction:column">
+          <button class="btn btn-primary" id="useCamera">Pakai Kamera (Camera)</button>
+          <button class="btn" id="useHardware">Pakai Alat (Scanner Keyboard)</button>
+        </div>
+      </div>
+      <div class="modal-foot"><button class="btn" id="mCancel">Batal</button></div>
+    `, 'wide');
+    $('#mClose', overlay).addEventListener('click', closeModal);
+    $('#mCancel', overlay).addEventListener('click', closeModal);
+    $('#useCamera', overlay).addEventListener('click', ()=>{ closeModal(); openScannerModal(); });
+    $('#useHardware', overlay).addEventListener('click', ()=>{ closeModal(); openHardwareScannerModal(); });
+  }
+
+  // attach scan button(s)
+  try {
+    const bs = document.getElementById('btnScan');
+    const bhw = document.getElementById('btnScanHw');
+    if (bs){
+      bs.addEventListener('click', ()=>{
+        if (window.innerWidth <= 860) openScanChooser();
+        else openScannerModal();
+      });
+    }
+    if (bhw){
+      // on small screens we hide the separate hardware button to present a single unified action
+      if (window.innerWidth <= 860) bhw.style.display = 'none';
+      bhw.addEventListener('click', ()=>{
+        if (window.innerWidth <= 860) openScanChooser();
+        else openHardwareScannerModal();
+      });
+    }
+  } catch(e){}
 })();

@@ -311,6 +311,10 @@
   #kasir-app .modal { max-width: 100%; border-radius: 16px 16px 0 0; max-height: 92%; }
   #kasir-app .prod-grid { grid-template-columns: repeat(auto-fill, minmax(104px,1fr)); }
 }
+/* Hide separate hardware-scan button on mobile to present unified scan action */
+@media (max-width: 860px){
+  #btnScanHw { display: none !important; }
+}
 @media (max-width: 420px){
   #kasir-app .nav-btn { font-size: 9.5px; }
   #kasir-app .summary-cards { grid-template-columns: 1fr 1fr; }
