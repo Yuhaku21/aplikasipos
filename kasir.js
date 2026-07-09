@@ -518,6 +518,14 @@
         <div class="field"><label>Kategori</label><input type="text" id="fCat" value="${editing?editing.category:''}" placeholder="Makanan, Minuman, dll"></div>
         <div class="field"><label>Harga (Rp)</label><input type="number" id="fPrice" min="0" value="${editing?editing.price:''}" inputmode="numeric"></div>
         <div class="field"><label>Stok</label><input type="number" id="fStock" min="0" value="${editing?editing.stock:''}" inputmode="numeric"></div>
+        <div class="field"><label>Barcode</label>
+          <div style="display:flex;gap:8px;align-items:center;">
+            <input type="text" id="fBarcode" value="${editing?editing.barcode||'' : ''}" placeholder="123456789012" style="flex:1;">
+            <button class="btn" id="mGen">Generate</button>
+            <button class="btn" id="mDl">Download</button>
+          </div>
+          <div id="barcodePreview" style="margin-top:10px;"></div>
+        </div>
       </div>
       <div class="modal-foot">
         <button class="btn" id="mCancel" style="flex:1;">Batal</button>
@@ -531,11 +539,13 @@
       const category = $('#fCat', overlay).value.trim() || 'Umum';
       const price = Number($('#fPrice', overlay).value) || 0;
       const stock = Number($('#fStock', overlay).value) || 0;
+      const barcode = ($('#fBarcode', overlay) && $('#fBarcode', overlay).value.trim()) || '';
       if (!name){ toast('Nama produk wajib diisi'); return; }
       if (editing){
         editing.name = name; editing.category = category; editing.price = price; editing.stock = stock;
+        editing.barcode = barcode || editing.barcode;
       } else {
-        products.push({ id: uid(), name, category, price, stock });
+        products.push({ id: uid(), name, category, price, stock, barcode });
       }
       await saveProducts();
       closeModal();
@@ -544,6 +554,80 @@
       renderProdGrid();
       toast('Produk disimpan');
     });
+
+    // barcode generate / download handlers
+    $('#mGen', overlay).addEventListener('click', ()=>{
+      const code = ($('#fBarcode', overlay) && $('#fBarcode', overlay).value.trim()) || '';
+      if (!code){ toast('Masukkan kode barcode'); return; }
+      try {
+        const svg = document.createElementNS('http://www.w3.org/2000/svg','svg');
+        JsBarcode(svg, code, { format: 'CODE128', displayValue: true, width: 2, height: 50 });
+        const prev = $('#barcodePreview', overlay);
+        prev.innerHTML = '';
+        prev.appendChild(svg);
+      } catch(e){ toast('Gagal membuat barcode'); }
+    });
+    $('#mDl', overlay).addEventListener('click', ()=>{
+      const code = ($('#fBarcode', overlay) && $('#fBarcode', overlay).value.trim()) || '';
+      if (!code){ toast('Masukkan kode barcode'); return; }
+      try { downloadBarcode(code); } catch(e){ toast('Gagal download barcode'); }
+    });
+  }
+
+  // Generate PNG from JsBarcode SVG and download
+  function downloadBarcode(code){
+    const svg = document.createElementNS('http://www.w3.org/2000/svg','svg');
+    JsBarcode(svg, code, { format: 'CODE128', displayValue: true, width: 2, height: 60 });
+    const svgData = new XMLSerializer().serializeToString(svg);
+    const img = new Image();
+    img.onload = function(){
+      const canvas = document.createElement('canvas');
+      canvas.width = img.width; canvas.height = img.height;
+      const ctx = canvas.getContext('2d'); ctx.fillStyle = '#ffffff'; ctx.fillRect(0,0,canvas.width,canvas.height); ctx.drawImage(img,0,0);
+      const png = canvas.toDataURL('image/png');
+      const a = document.createElement('a'); a.href = png; a.download = 'barcode-'+code+'.png'; document.body.appendChild(a); a.click(); document.body.removeChild(a);
+    };
+    img.onerror = function(){ toast('Gagal menghasilkan gambar'); };
+    img.src = 'data:image/svg+xml;base64,' + btoa(unescape(encodeURIComponent(svgData)));
+  }
+
+  // Scan barcode using Quagga
+  function openScannerModal(){
+    const overlay = openModal(`
+      <div class="modal-head"><h3>Scan Barcode</h3><button class="modal-close" id="mClose">✕</button></div>
+      <div class="modal-body"><div id="scanner" style="width:100%;height:320px;background:#000"></div><div style="margin-top:8px;color:var(--ink-soft);font-size:12px">Arahkan kamera ke barcode / EAN</div></div>
+      <div class="modal-foot"><button class="btn" id="mCancel">Batal</button></div>
+    `, 'wide');
+    const scannerEl = document.getElementById('scanner');
+    try {
+      Quagga.init({
+        inputStream: { name: 'Live', type: 'LiveStream', target: scannerEl, constraints: { facingMode: 'environment' } },
+        decoder: { readers: ['code_128_reader','ean_reader','ean_8_reader','upc_reader','upc_e_reader'] },
+        locate: true
+      }, function(err){
+        if (err){ console.error(err); toast('Camera tidak tersedia atau izin ditolak'); return; }
+        Quagga.start();
+      });
+      Quagga.onDetected(function(result){
+        const code = result && result.codeResult && result.codeResult.code;
+        if (code){
+          try { Quagga.stop(); } catch(e){}
+          closeModal();
+          addToCartByBarcode(code);
+        }
+      });
+    } catch(e){ toast('Scanner tidak tersedia'); }
+    // cleanup on cancel/close
+    document.getElementById('mCancel').addEventListener('click', ()=>{ try{ Quagga.stop(); }catch(e){}; closeModal(); });
+    document.getElementById('mClose').addEventListener('click', ()=>{ try{ Quagga.stop(); }catch(e){}; closeModal(); });
+  }
+
+  function addToCartByBarcode(code){
+    const p = products.find(x=>x.barcode && x.barcode === code);
+    if (p){ addToCart(p.id); toast('Produk: '+p.name+' ditambahkan'); return; }
+    toast('Produk dengan barcode ini tidak ditemukan. Silakan tambahkan produk.');
+    // open add product modal with barcode prefilled
+    setTimeout(()=>{ openProdukModal(); setTimeout(()=>{ const f = document.getElementById('fBarcode'); if(f) f.value = code; const gen = document.getElementById('mGen'); if(gen) gen.click(); }, 200); }, 300);
   }
 
   function deleteProduk(id){
@@ -842,4 +926,5 @@
     } catch(e){}
   }
   init();
+  try { const bs = document.getElementById('btnScan'); if (bs) bs.addEventListener('click', openScannerModal); } catch(e){}
 })();

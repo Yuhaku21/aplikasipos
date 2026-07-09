@@ -368,6 +368,10 @@
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M12 3v12m0 0l-4-4m4 4l4-4M5 21h14"/></svg>
         Install
       </button>
+      <button class="btn-install" id="btnScan" title="Scan Barcode">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M3 7v4M7 3h4M21 17v4M17 21h-4M3 3h6v6H3zM15 15h6v6h-6z"/></svg>
+        Scan
+      </button>
     </div>
   </div>
 
@@ -559,6 +563,8 @@
 </div>
 
 <script src="kasir.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.5/dist/JsBarcode.all.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/quagga/0.12.1/quagga.min.js"></script>
 <script>
 if ('serviceWorker' in navigator) { navigator.serviceWorker.register('/sw.js').catch(()=>{}); }
 document.addEventListener('DOMContentLoaded', ()=>{ const s = document.getElementById('pwa-splash'); if(s){ setTimeout(()=>s.classList.add('hide'),900); }});
